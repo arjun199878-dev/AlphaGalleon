@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AlphaGalleon Institutional Interface</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "primary-dim": "#0fa842",
+                        "gold": "#d4af37",
+                        "background-dark": "#050505", /* True Black */
+                        "surface-dark": "#0A0A0A",
+                        "institutional-gray": "#121212",
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "serif": ["Playfair Display", "serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                    boxShadow: {
+                        "neon": "0 0 20px rgba(19, 236, 91, 0.15)",
+                    }
+                },
+            },
+        }
+    </script>
+    
+    <style>
+        body { 
+            background-color: #050505;
+            color: #e2e8f0;
+            font-family: 'Space Grotesk', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Glassmorphism & Utilities */
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .active-nav-glow {
+            box-shadow: 0 -4px 20px rgba(19, 236, 91, 0.4);
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Smooth Transitions */
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Toggle Switch Animation */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #13ec5b;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #13ec5b;
+        }
+        
+        .asset-toggle-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .asset-toggle-btn.active {
+            background-color: #13ec5b;
+            color: #000;
+            font-weight: 600;
+            box-shadow: 0 0 15px rgba(19, 236, 91, 0.3);
+        }
+        .asset-toggle-btn.inactive {
+            color: #64748b;
+        }
+        .asset-toggle-btn.inactive:hover {
+            color: #94a3b8;
+        }
+
+        /* Nav Bar Positioning */
+        .nav-container {
+            backdrop-filter: blur(20px);
+            background: rgba(5, 5, 5, 0.85);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+    </style>
+</head>
+<body class="bg-background-dark min-h-screen text-slate-200 overflow-x-hidden pb-24">
+
+    <!-- ==================== TAB: HOME ==================== -->
+    <div id="tab-home" class="tab-content active">
+        <!-- Header -->
+        <header class="pt-12 pb-6 px-6 flex justify-between items-end">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-primary/80 font-mono">System Online</p>
+                </div>
+                <h1 class="font-serif text-3xl italic text-white leading-tight">Good evening,<br>Julian</h1>
+            </div>
+            <button class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-slate-400 hover:text-white transition-colors border border-white/5">
+                <span class="material-icons-round text-xl">notifications</span>
+            </button>
+        </header>
+
+        <!-- Toggle: Mutual Funds / Stocks -->
+        <section class="px-6 mb-6">
+            <div class="glass-panel p-1 rounded-full flex relative">
+                <button onclick="toggleAsset('stocks')" id="btn-stocks" class="asset-toggle-btn active flex-1 py-3 rounded-full text-xs uppercase tracking-widest text-center">
+                    Stocks
+                </button>
+                <button onclick="toggleAsset('mf')" id="btn-mf" class="asset-toggle-btn inactive flex-1 py-3 rounded-full text-xs uppercase tracking-widest text-center">
+                    Mutual Funds
+                </button>
+            </div>
+        </section>
+
+        <!-- Search -->
+        <section class="px-6 mb-8">
+            <div class="relative group">
+                <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                    <span class="material-icons-round text-slate-500 text-lg">search</span>
+                </div>
+                <input class="w-full bg-institutional-gray border border-white/5 rounded-xl py-4 pl-12 pr-4 text-sm focus:ring-1 focus:ring-primary/40 focus:border-primary/40 placeholder:text-slate-600 transition-all text-white shadow-inner" placeholder="Search securities, sectors, or reports..." type="text"/>
+            </div>
+        </section>
+
+        <!-- Market Pulse -->
+        <section class="mb-8 pl-6">
+            <h3 class="font-serif text-lg mb-4 text-white">Market Pulse</h3>
+            <div class="flex overflow-x-auto no-scrollbar gap-4 pr-6 pb-2">
+                <!-- NIFTY -->
+                <div class="min-w-[150px] glass-panel bg-surface-dark rounded-xl p-4 border-l-2 border-primary">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-mono text-slate-400">NIFTY 50</span>
+                        <span class="text-primary text-[10px] font-bold">+1.2%</span>
+                    </div>
+                    <div class="text-xl font-medium tabular-nums text-white">22,419<span class="text-sm text-slate-500">.40</span></div>
+                </div>
+                <!-- SENSEX -->
+                <div class="min-w-[150px] glass-panel bg-surface-dark rounded-xl p-4 border-l-2 border-primary/50">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-mono text-slate-400">SENSEX</span>
+                        <span class="text-primary text-[10px] font-bold">+0.8%</span>
+                    </div>
+                    <div class="text-xl font-medium tabular-nums text-white">73,876<span class="text-sm text-slate-500">.15</span></div>
+                </div>
+                 <!-- GOLD -->
+                 <div class="min-w-[150px] glass-panel bg-surface-dark rounded-xl p-4 border-l-2 border-gold/50">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-mono text-slate-400">GOLD</span>
+                        <span class="text-gold text-[10px] font-bold">+0.4%</span>
+                    </div>
+                    <div class="text-xl font-medium tabular-nums text-white">65,200<span class="text-sm text-slate-500">.00</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Institutional Insight Feed -->
+        <section class="px-6 pb-24">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-serif text-lg text-white">Institutional Insight</h3>
+                <span class="text-[10px] font-mono text-primary animate-pulse">● LIVE_FEED</span>
+            </div>
+            
+            <div id="feed-container" class="space-y-4">
+                <!-- Content injected via JS -->
+            </div>
+        </section>
+    </div>
+
+    <!-- ==================== TAB: AI HUB ==================== -->
+    <div id="tab-ai" class="tab-content">
+        <header class="pt-12 px-6 mb-6">
+            <h2 class="text-primary text-[10px] uppercase tracking-[0.3em] font-mono mb-2">AlphaGalleon Core</h2>
+            <h1 class="text-4xl font-serif text-white">The Hub</h1>
+        </header>
+
+        <div class="px-6 grid gap-4 pb-24">
+            <!-- 1. The Architect -->
+            <button onclick="openView('view-architect')" class="w-full text-left glass-panel p-5 rounded-xl border-l-2 border-primary relative overflow-hidden group hover:bg-white/5 transition-all active:scale-[0.98]">
+                <div class="absolute right-0 top-0 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <span class="material-symbols-outlined text-8xl text-primary transform translate-x-4 -translate-y-4">architecture</span>
+                </div>
+                <div class="relative z-10">
+                    <div class="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center mb-3 text-primary">
+                        <span class="material-symbols-outlined">architecture</span>
+                    </div>
+                    <h3 class="text-xl font-serif text-white mb-1">The Architect</h3>
+                    <p class="text-xs text-slate-400 mb-0 font-light w-3/4">Portfolio construction & rebalancing engine.</p>
+                </div>
+            </button>
+
+            <!-- 2. The Doctor -->
+            <button onclick="openView('view-doctor')" class="w-full text-left glass-panel p-5 rounded-xl border-l-2 border-red-500 relative overflow-hidden group hover:bg-white/5 transition-all active:scale-[0.98]">
+                <div class="absolute right-0 top-0 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <span class="material-symbols-outlined text-8xl text-red-500 transform translate-x-4 -translate-y-4">cardiology</span>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start">
+                        <div class="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center mb-3 text-red-500">
+                            <span class="material-symbols-outlined">cardiology</span>
+                        </div>
+                        <div class="px-2 py-1 bg-red-500/10 rounded border border-red-500/20">
+                            <span class="text-[10px] font-mono text-red-400">ALERTS: 3</span>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-serif text-white mb-1">The Doctor</h3>
+                    <p class="text-xs text-slate-400 mb-0 font-light w-3/4">Risk diagnosis and portfolio health checks.</p>
+                </div>
+            </button>
+
+            <!-- 3. Time Travel -->
+            <div class="glass-panel p-5 rounded-xl border-l-2 border-purple-500 relative overflow-hidden group">
+                <div class="absolute right-0 top-0 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <span class="material-symbols-outlined text-8xl text-purple-500 transform translate-x-4 -translate-y-4">history_toggle_off</span>
+                </div>
+                <div class="relative z-10">
+                    <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center mb-3 text-purple-500">
+                        <span class="material-symbols-outlined">history_toggle_off</span>
+                    </div>
+                    <h3 class="text-xl font-serif text-white mb-1">Time Travel</h3>
+                    <p class="text-xs text-slate-400 mb-0 font-light w-3/4">Historical backtesting and scenario simulation.</p>
+                </div>
+            </div>
+
+            <!-- 4. The Scout (New) -->
+            <div class="glass-panel p-5 rounded-xl border-l-2 border-gold relative overflow-hidden group">
+                <div class="absolute right-0 top-0 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <span class="material-symbols-outlined text-8xl text-gold transform translate-x-4 -translate-y-4">radar</span>
+                </div>
+                <div class="relative z-10">
+                    <div class="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center mb-3 text-gold">
+                        <span class="material-symbols-outlined">radar</span>
+                    </div>
+                    <h3 class="text-xl font-serif text-white mb-1">The Scout</h3>
+                    <p class="text-xs text-slate-400 mb-0 font-light w-3/4">AI-driven opportunity radar & screener.</p>
+                </div>
+            </div>
+
+            <!-- 5. The Sentinel (New) -->
+            <div class="glass-panel p-5 rounded-xl border-l-2 border-blue-500 relative overflow-hidden group">
+                <div class="absolute right-0 top-0 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <span class="material-symbols-outlined text-8xl text-blue-500 transform translate-x-4 -translate-y-4">policy</span>
+                </div>
+                <div class="relative z-10">
+                    <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mb-3 text-blue-500">
+                        <span class="material-symbols-outlined">policy</span>
+                    </div>
+                    <h3 class="text-xl font-serif text-white mb-1">The Sentinel</h3>
+                    <p class="text-xs text-slate-400 mb-0 font-light w-3/4">Real-time news monitoring & sentiment alerts.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SUB-VIEW: THE DOCTOR ==================== -->
+    <div id="view-doctor" class="fixed inset-0 bg-background-dark z-[60] overflow-y-auto hidden">
+        <header class="pt-6 pb-4 px-6 sticky top-0 bg-background-dark/90 backdrop-blur-md z-10 border-b border-white/5">
+            <div class="flex items-center gap-4">
+                <button onclick="closeView('view-doctor')" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-slate-400 hover:text-white">
+                    <span class="material-icons-round">arrow_back</span>
+                </button>
+                <div>
+                    <h2 class="text-red-500 text-[10px] uppercase tracking-[0.2em] font-mono">System Diagnostic</h2>
+                    <h1 class="text-xl font-serif text-white">The Doctor</h1>
+                </div>
+            </div>
+        </header>
+
+        <main class="px-6 py-6 pb-24 space-y-6">
+            <!-- Health Score Hero -->
+            <div class="glass-panel rounded-2xl p-8 text-center relative overflow-hidden border-t-4 border-t-gold">
+                <div class="absolute inset-0 bg-gradient-to-b from-gold/5 to-transparent pointer-events-none"></div>
+                <h3 class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-4">Portfolio Health Score</h3>
+                <div class="relative inline-flex items-center justify-center">
+                    <svg class="w-32 h-32 transform -rotate-90">
+                        <circle cx="64" cy="64" r="60" stroke="currentColor" stroke-width="8" fill="transparent" class="text-institutional-gray" />
+                        <circle cx="64" cy="64" r="60" stroke="currentColor" stroke-width="8" fill="transparent" stroke-dasharray="377" stroke-dashoffset="60" class="text-gold" />
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span class="text-4xl font-serif text-white">84</span>
+                        <span class="text-[10px] font-bold text-gold uppercase">Robust</span>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-center gap-6 text-center">
+                    <div>
+                        <span class="block text-[10px] text-slate-500 uppercase">Volatility</span>
+                        <span class="text-sm font-mono text-white">12.4%</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-500 uppercase">Beta</span>
+                        <span class="text-sm font-mono text-white">0.85</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-500 uppercase">Sharpe</span>
+                        <span class="text-sm font-mono text-white">1.92</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Critical Alerts -->
+            <section>
+                <h3 class="font-serif text-lg text-white mb-3">Critical Diagnosis</h3>
+                <div class="space-y-3">
+                    <!-- Alert 1 -->
+                    <div class="glass-panel p-4 rounded-xl border-l-2 border-red-500 flex gap-4">
+                        <div class="mt-1">
+                            <span class="material-symbols-outlined text-red-500">warning</span>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-1">Over-exposure: Adani Group</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                Combined exposure across Adani Ports, Power, and Green exceeds <span class="text-white font-mono">18%</span> of portfolio. Recommended limit: 10%.
+                            </p>
+                            <button class="mt-3 text-[10px] font-bold text-red-400 uppercase tracking-wider border border-red-500/30 px-3 py-1.5 rounded hover:bg-red-500/10 transition-colors">
+                                View Fix Options
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Alert 2 -->
+                    <div class="glass-panel p-4 rounded-xl border-l-2 border-gold flex gap-4">
+                        <div class="mt-1">
+                            <span class="material-symbols-outlined text-gold">savings</span>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-1">Cash Drag Detected</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                <span class="text-white font-mono">₹14.2L</span> is sitting in liquid bees earning 6.5%. Deploy into 'Defensive Opportunities' to target 12%+.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sector Allocation -->
+            <section>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-serif text-lg text-white">Sector Allocation</h3>
+                    <span class="text-[10px] text-slate-500 font-mono">VS. BENCHMARK</span>
+                </div>
+                <div class="glass-panel p-5 rounded-xl space-y-4">
+                    <!-- Bar 1 -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">Financials</span>
+                            <span class="text-primary font-mono">32% (+4%)</span>
+                        </div>
+                        <div class="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                            <div class="bg-primary h-full rounded-full" style="width: 32%"></div>
+                        </div>
+                    </div>
+                    <!-- Bar 2 -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">Technology</span>
+                            <span class="text-slate-500 font-mono">18% (-2%)</span>
+                        </div>
+                        <div class="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                            <div class="bg-slate-500 h-full rounded-full" style="width: 18%"></div>
+                        </div>
+                    </div>
+                    <!-- Bar 3 -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">Energy</span>
+                            <span class="text-red-400 font-mono">24% (+8%)</span>
+                        </div>
+                        <div class="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                            <div class="bg-red-400 h-full rounded-full" style="width: 24%"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ==================== SUB-VIEW: THE ARCHITECT ==================== -->
+    <div id="view-architect" class="fixed inset-0 bg-background-dark z-[60] overflow-y-auto hidden">
+        <header class="pt-6 pb-4 px-6 sticky top-0 bg-background-dark/90 backdrop-blur-md z-10 border-b border-white/5">
+            <div class="flex items-center gap-4">
+                <button onclick="closeView('view-architect')" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-slate-400 hover:text-white">
+                    <span class="material-icons-round">arrow_back</span>
+                </button>
+                <div>
+                    <h2 class="text-primary text-[10px] uppercase tracking-[0.2em] font-mono">Portfolio Construction</h2>
+                    <h1 class="text-xl font-serif text-white">The Architect</h1>
+                </div>
+            </div>
+        </header>
+
+        <main class="px-6 py-6 pb-24 space-y-6">
+            <!-- Configuration Panel -->
+            <section class="glass-panel p-6 rounded-2xl border-l-2 border-primary">
+                <h3 class="font-serif text-lg text-white mb-4">Investment Parameters</h3>
+                
+                <div class="space-y-5">
+                    <!-- Capital Input -->
+                    <div>
+                        <label class="block text-[10px] text-slate-500 uppercase tracking-widest mb-2">Deployable Capital (INR)</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-serif italic text-lg">₹</span>
+                            <input type="text" value="5,00,000" class="w-full bg-institutional-gray border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white font-mono text-lg focus:ring-1 focus:ring-primary/50 focus:border-primary/50 transition-all outline-none" />
+                        </div>
+                    </div>
+
+                    <!-- Risk Slider -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-[10px] text-slate-500 uppercase tracking-widest">Risk Appetite</label>
+                            <span class="text-primary text-xs font-bold bg-primary/10 px-2 py-0.5 rounded border border-primary/20">Aggressive Growth</span>
+                        </div>
+                        <input type="range" min="1" max="5" value="4" class="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary" />
+                        <div class="flex justify-between text-[9px] text-slate-600 mt-1 font-mono uppercase">
+                            <span>Conservative</span>
+                            <span>Balanced</span>
+                            <span>Aggressive</span>
+                        </div>
+                    </div>
+
+                    <!-- Horizon Selection -->
+                    <div>
+                         <label class="block text-[10px] text-slate-500 uppercase tracking-widest mb-2">Time Horizon</label>
+                         <div class="flex gap-2">
+                             <button class="flex-1 py-2 rounded-lg border border-white/5 bg-white/5 text-xs text-slate-400 hover:text-white hover:bg-white/10 transition-colors">1-3Y</button>
+                             <button class="flex-1 py-2 rounded-lg border border-primary/30 bg-primary/10 text-xs text-primary font-bold shadow-[0_0_10px_rgba(19,236,91,0.1)]">3-5Y</button>
+                             <button class="flex-1 py-2 rounded-lg border border-white/5 bg-white/5 text-xs text-slate-400 hover:text-white hover:bg-white/10 transition-colors">5Y+</button>
+                         </div>
+                    </div>
+                </div>
+
+                <button onclick="generatePortfolio()" class="w-full mt-6 bg-primary text-background-dark font-bold py-3.5 rounded-xl shadow-[0_0_20px_rgba(19,236,91,0.3)] hover:shadow-[0_0_30px_rgba(19,236,91,0.5)] transition-all transform active:scale-[0.98] flex items-center justify-center gap-2">
+                    <span class="material-icons-round">auto_awesome</span>
+                    Generate Alpha Strategy
+                </button>
+            </section>
+
+            <!-- Loading State (Hidden by default) -->
+            <div id="architect-loading" class="hidden py-12 text-center">
+                <div class="inline-block w-12 h-12 border-2 border-white/10 border-t-primary rounded-full animate-spin mb-4"></div>
+                <p class="text-xs font-mono text-slate-400 animate-pulse">ANALYZING MARKET VECTORS...</p>
+            </div>
+
+            <!-- Results Panel (Hidden by default) -->
+            <div id="architect-results" class="hidden space-y-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
+                    <span class="text-[10px] font-mono text-primary uppercase tracking-widest">Strategy Ready</span>
+                </div>
+
+                <!-- Strategy Card -->
+                <div class="glass-panel p-0 rounded-2xl overflow-hidden border border-primary/20">
+                    <div class="p-5 bg-primary/5 border-b border-white/5">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-serif text-lg text-white">High-Conviction Growth</h3>
+                                <p class="text-xs text-slate-400 mt-1">Target CAGR: <span class="text-primary font-bold">18-22%</span></p>
+                            </div>
+                            <div class="w-10 h-10 rounded-full border border-primary/30 flex items-center justify-center bg-background-dark">
+                                <span class="material-icons-round text-primary">trending_up</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-5 space-y-4">
+                        <!-- Asset 1 -->
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-slate-400">
+                                    <span class="material-symbols-outlined text-sm">pie_chart</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">Small Cap Funds</h4>
+                                    <p class="text-[10px] text-slate-500">Quant / Nippon</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-sm font-mono text-white">40%</span>
+                                <span class="text-[10px] text-slate-500">₹2,00,000</span>
+                            </div>
+                        </div>
+                        <!-- Asset 2 -->
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-slate-400">
+                                    <span class="material-symbols-outlined text-sm">domain</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">Bluechip Leaders</h4>
+                                    <p class="text-[10px] text-slate-500">HDFC / Reliance</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-sm font-mono text-white">30%</span>
+                                <span class="text-[10px] text-slate-500">₹1,50,000</span>
+                            </div>
+                        </div>
+                        <!-- Asset 3 -->
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-slate-400">
+                                    <span class="material-symbols-outlined text-sm">token</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">Momentum Satellite</h4>
+                                    <p class="text-[10px] text-slate-500">Defense / Power</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-sm font-mono text-white">30%</span>
+                                <span class="text-[10px] text-slate-500">₹1,50,000</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-white/5 border-t border-white/5 flex gap-3">
+                        <button class="flex-1 py-3 rounded-lg border border-white/10 text-xs font-bold text-slate-300 hover:bg-white/5">Edit</button>
+                        <button class="flex-[2] py-3 rounded-lg bg-primary text-background-dark text-xs font-bold shadow-lg hover:bg-primary-dim transition-colors">
+                            Deploy Strategy
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ==================== TAB: PROFILE ==================== -->
+    <div id="tab-profile" class="tab-content">
+        <header class="pt-12 pb-8 flex flex-col items-center">
+            <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-institutional-gray to-black border border-white/10 flex items-center justify-center mb-4 relative">
+                <span class="font-serif text-4xl text-primary italic">A</span>
+                <div class="absolute bottom-0 right-0 w-6 h-6 bg-primary rounded-full border-4 border-black"></div>
+            </div>
+            <h1 class="text-xl font-serif text-white">Julian's Vault</h1>
+            <p class="text-[10px] uppercase tracking-[0.2em] text-slate-500 mt-2">AlphaGalleon Client</p>
+        </header>
+
+        <section class="px-6 space-y-3">
+             <div class="glass-panel rounded-xl overflow-hidden">
+                <button class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors border-b border-white/5">
+                    <div class="flex items-center gap-4">
+                        <span class="material-symbols-outlined text-slate-400">tune</span>
+                        <span class="text-sm font-medium text-white">Risk Profile Configuration</span>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-600 text-sm">chevron_right</span>
+                </button>
+                <button class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors border-b border-white/5">
+                    <div class="flex items-center gap-4">
+                        <span class="material-symbols-outlined text-slate-400">interests</span>
+                        <span class="text-sm font-medium text-white">Sector Preferences</span>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-600 text-sm">chevron_right</span>
+                </button>
+                 <button class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <span class="material-symbols-outlined text-slate-400">notifications</span>
+                        <span class="text-sm font-medium text-white">Alert Settings</span>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-600 text-sm">chevron_right</span>
+                </button>
+            </div>
+
+            <div class="glass-panel rounded-xl overflow-hidden mt-6">
+                <button class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors border-b border-white/5">
+                    <div class="flex items-center gap-4">
+                        <span class="material-symbols-outlined text-slate-400">fingerprint</span>
+                        <span class="text-sm font-medium text-white">Biometric Security</span>
+                    </div>
+                    <div class="w-8 h-4 bg-primary/20 rounded-full relative">
+                        <div class="absolute right-0 top-0 w-4 h-4 bg-primary rounded-full shadow-neon"></div>
+                    </div>
+                </button>
+                <button class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <span class="material-symbols-outlined text-slate-400">help_outline</span>
+                        <span class="text-sm font-medium text-white">Support & Documentation</span>
+                    </div>
+                </button>
+            </div>
+
+            <button class="w-full py-4 mt-8 text-xs uppercase tracking-widest text-red-400 hover:text-red-300 transition-colors">
+                Sign Out
+            </button>
+        </section>
+    </div>
+
+    <!-- ==================== BOTTOM NAV ==================== -->
+    <nav class="fixed bottom-0 left-0 right-0 nav-container px-6 py-2 z-50">
+        <div class="flex justify-between items-center h-16 max-w-lg mx-auto">
+            <!-- Home -->
+            <button onclick="switchTab('home')" id="nav-home" class="nav-btn group flex flex-col items-center gap-1 text-primary">
+                <span class="material-icons-round text-2xl transition-transform group-active:scale-95">grid_view</span>
+                <span class="w-1 h-1 bg-primary rounded-full"></span>
+            </button>
+            
+            <!-- Markets (Placeholder for functionality) -->
+            <button class="nav-btn group flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300">
+                <span class="material-icons-round text-2xl transition-transform group-active:scale-95">show_chart</span>
+                <span class="w-1 h-1 bg-transparent rounded-full"></span>
+            </button>
+
+            <!-- AI HUB (Center) -->
+            <button onclick="switchTab('ai')" id="nav-ai" class="nav-btn -mt-8">
+                <div class="w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-neon border-4 border-background-dark transform transition-transform active:scale-95 hover:shadow-[0_0_30px_rgba(19,236,91,0.4)]">
+                    <span class="material-symbols-outlined text-black text-3xl font-bold">bolt</span>
+                </div>
+            </button>
+
+            <!-- Feed/Network -->
+            <button class="nav-btn group flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300">
+                <span class="material-icons-round text-2xl transition-transform group-active:scale-95">language</span>
+                <span class="w-1 h-1 bg-transparent rounded-full"></span>
+            </button>
+
+            <!-- Profile -->
+            <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn group flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300">
+                <span class="material-icons-round text-2xl transition-transform group-active:scale-95">person_outline</span>
+                <span class="w-1 h-1 bg-transparent rounded-full"></span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        // --- DATA SIMULATION ---
+        const feedData = {
+            stocks: [
+                {
+                    name: "HDFC Bank",
+                    ticker: "NSE: HDFCBANK",
+                    action: "BUY",
+                    actionColor: "primary", // green
+                    price: "₹1,452.00",
+                    change: "+1.2%",
+                    insight: "Institutional volume spike detected. RSI divergence suggests trend reversal. 'The Doctor' indicates undervaluation relative to peers.",
+                    time: "14m ago",
+                    confidence: "92%"
+                },
+                {
+                    name: "Tata Power",
+                    ticker: "NSE: TATAPOWER",
+                    action: "HOLD",
+                    actionColor: "gold", // yellow
+                    price: "₹412.50",
+                    change: "+0.4%",
+                    insight: "Sector rotation into utilities observed. Momentum is strong but approaching resistance at ₹420 levels.",
+                    time: "2h ago",
+                    confidence: "78%"
+                },
+                {
+                    name: "Reliance Ind.",
+                    ticker: "NSE: RELIANCE",
+                    action: "BUY",
+                    actionColor: "primary",
+                    price: "₹2,980.00",
+                    change: "+2.1%",
+                    insight: "Refinery margins improving. Foreign Institutional Investor (FII) inflow detected in last 3 sessions.",
+                    time: "4h ago",
+                    confidence: "88%"
+                }
+            ],
+            mf: [
+                {
+                    name: "Quant Small Cap",
+                    ticker: "Direct Growth",
+                    action: "BUY",
+                    actionColor: "primary",
+                    price: "NAV: ₹248.2",
+                    change: "+3.4%",
+                    insight: "Small cap index breakout. This fund has high alpha generation in current volatility regime.",
+                    time: "1h ago",
+                    confidence: "95%"
+                },
+                {
+                    name: "Parag Parikh Flexi",
+                    ticker: "Direct Growth",
+                    action: "ACCUMULATE",
+                    actionColor: "primary",
+                    price: "NAV: ₹78.4",
+                    change: "+0.8%",
+                    insight: "Consistent compounder. Good time to increase SIP allocation for long-term stability.",
+                    time: "5h ago",
+                    confidence: "90%"
+                },
+                {
+                    name: "Axis Bluechip",
+                    ticker: "Regular Plan",
+                    action: "SELL",
+                    actionColor: "red-500", // red
+                    price: "NAV: ₹54.2",
+                    change: "-0.2%",
+                    insight: "Underperformance vs Benchmark for 4 consecutive quarters. 'The Architect' suggests rotation to NiftyBees.",
+                    time: "1d ago",
+                    confidence: "82%"
+                }
+            ]
+        };
+
+        // --- CORE FUNCTIONS ---
+
+        // 1. Tab Switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            
+            // Reset Nav Colors
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                if(!el.id.includes('ai')) {
+                    el.classList.remove('text-primary');
+                    el.classList.add('text-slate-500');
+                    const dot = el.querySelector('span:last-child');
+                    if(dot) dot.classList.add('bg-transparent');
+                    if(dot) dot.classList.remove('bg-primary');
+                }
+            });
+
+            // Highlight Active
+            const activeBtn = document.getElementById('nav-' + tabId);
+            if (activeBtn && tabId !== 'ai') {
+                activeBtn.classList.remove('text-slate-500');
+                activeBtn.classList.add('text-primary');
+                const dot = activeBtn.querySelector('span:last-child');
+                if(dot) dot.classList.remove('bg-transparent');
+                if(dot) dot.classList.add('bg-primary');
+            }
+        }
+
+        // 2. Asset Toggle & Feed Rendering
+        function toggleAsset(type) {
+            const stocksBtn = document.getElementById('btn-stocks');
+            const mfBtn = document.getElementById('btn-mf');
+
+            // UI Toggle
+            if (type === 'stocks') {
+                stocksBtn.classList.add('active', 'shadow-[0_0_15px_rgba(19,236,91,0.3)]');
+                stocksBtn.classList.remove('inactive');
+                mfBtn.classList.add('inactive');
+                mfBtn.classList.remove('active', 'shadow-[0_0_15px_rgba(19,236,91,0.3)]');
+            } else {
+                mfBtn.classList.add('active', 'shadow-[0_0_15px_rgba(19,236,91,0.3)]');
+                mfBtn.classList.remove('inactive');
+                stocksBtn.classList.add('inactive');
+                stocksBtn.classList.remove('active', 'shadow-[0_0_15px_rgba(19,236,91,0.3)]');
+            }
+
+            // Render Logic
+            const container = document.getElementById('feed-container');
+            container.innerHTML = ''; // Clear existing
+            
+            const data = feedData[type];
+            let delay = 0;
+
+            data.forEach(item => {
+                // Color Logic
+                let colorClass = item.actionColor === 'primary' ? 'text-primary bg-primary/10' : 
+                                 item.actionColor === 'gold' ? 'text-gold bg-gold/10' : 'text-red-500 bg-red-500/10';
+                
+                let iconColor = item.actionColor === 'primary' ? 'text-primary' : 
+                                item.actionColor === 'gold' ? 'text-gold' : 'text-red-500';
+
+                let iconType = type === 'stocks' ? 'precision_manufacturing' : 'pie_chart';
+                if(item.name.includes('Power')) iconType = 'bolt';
+
+                const card = `
+                <div class="glass-panel p-5 rounded-xl border border-white/5 hover:border-primary/30 transition-all duration-500 transform translate-y-4 opacity-0 fill-mode-forwards" style="animation: slideUp 0.5s ease-out ${delay}s forwards">
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center ${iconColor}">
+                                <span class="material-symbols-outlined">${iconType}</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-sm text-white">${item.name}</h4>
+                                <p class="text-[10px] text-slate-500 font-mono">${item.ticker}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold px-2 py-1 rounded ${colorClass}">${item.action}</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed mb-3">
+                        ${item.insight}
+                    </p>
+                    <div class="flex items-center gap-2 text-[10px] text-slate-500 font-mono border-t border-white/5 pt-3">
+                        <span class="material-symbols-outlined text-sm">schedule</span> ${item.time}
+                        <span class="text-slate-600">|</span>
+                        <span>AI Confidence: ${item.confidence}</span>
+                    </div>
+                </div>`;
+                
+                container.innerHTML += card;
+                delay += 0.1;
+            });
+        }
+
+        // 3. View Management (Doctor & Architect)
+        function openView(viewId) {
+            const view = document.getElementById(viewId);
+            view.classList.remove('hidden');
+            view.animate([
+                { transform: 'translateY(100%)', opacity: 0 },
+                { transform: 'translateY(0)', opacity: 1 }
+            ], {
+                duration: 300,
+                easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+            });
+        }
+
+        function closeView(viewId) {
+            const view = document.getElementById(viewId);
+            const anim = view.animate([
+                { transform: 'translateY(0)', opacity: 1 },
+                { transform: 'translateY(100%)', opacity: 0 }
+            ], {
+                duration: 250,
+                easing: 'ease-in'
+            });
+            anim.onfinish = () => view.classList.add('hidden');
+        }
+
+        // 4. Architect Logic
+        function generatePortfolio() {
+            // Hide previous results if any
+            document.getElementById('architect-results').classList.add('hidden');
+            
+            // Show loading
+            const loader = document.getElementById('architect-loading');
+            loader.classList.remove('hidden');
+            
+            // Scroll to bottom
+            const view = document.getElementById('view-architect');
+            view.scrollTo({ top: view.scrollHeight, behavior: 'smooth' });
+
+            // Simulate AI processing time
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                const results = document.getElementById('architect-results');
+                results.classList.remove('hidden');
+                
+                // Animate entry
+                results.animate([
+                    { transform: 'translateY(20px)', opacity: 0 },
+                    { transform: 'translateY(0)', opacity: 1 }
+                ], {
+                    duration: 400,
+                    easing: 'ease-out'
+                });
+                
+                view.scrollTo({ top: view.scrollHeight, behavior: 'smooth' });
+            }, 2000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            toggleAsset('stocks'); // Load stocks by default
+        });
+
+    </script>
+    <style>
+        @keyframes slideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,41 @@
+fastapi==0.109.2
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-core==2.14.6
+google-generativeai==0.3.0
+python-dotenv==1.0.0
+httpx==0.25.2
+beautifulsoup4==4.12.2
+pandas==2.1.4
+numpy==1.26.3
+requests==2.31.0
+
+# Telegram Bot
+python-telegram-bot==20.5
+
+# Database & Backend
+convex==1.32.0
+
+# Caching & Performance
+redis==5.0.1
+hiredis==2.2.3
+
+# Authentication & Security
+PyJWT==2.8.1
+bcrypt==4.1.1
+python-jose==3.3.0
+
+# Async & Concurrency
+aiohttp==3.9.1
+asyncio-contextmanager==1.0.0
+
+# Data Processing
+yfinance==0.2.33
+
+# Utilities
+python-multipart==0.0.6
+cors==1.0.1
+
+# Production & Monitoring
+gunicorn==21.2.0
+prometheus-client==0.19.0

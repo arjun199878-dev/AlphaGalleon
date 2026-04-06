@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-dotenv
+google-generativeai
+pydantic
+pandas
+numpy
+httpx
+requests
+beautifulsoup4
+yfinance

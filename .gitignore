@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+alphagalleon-backend/venv/
+
+# Environment variables (NEVER commit secrets)
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# React Native / Expo
+mobile/.expo/
+*.jks
+*.keystore
+
+# Build outputs
+*.apk
+*.aab
+*.ipa
+
+# Logs
+*.log
+npm-debug.log*
+
+# Type checker config (local)
+alphagalleon-backend/pyrightconfig.json
