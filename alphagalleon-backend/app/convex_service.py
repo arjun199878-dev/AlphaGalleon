@@ -178,6 +178,44 @@ class ConvexService:
             print(f"❌ Error updating Upstox token: {e}")
             return False
 
+    # ─── Watchlist Operations ──────────────────────────────
+
+    def get_watchlist(self, user_id: str):
+        """Get user's watchlist items."""
+        if not self.client:
+            return []
+        try:
+            return self.client.query("watchlist:listByUser", {"userId": user_id})
+        except Exception as e:
+            print(f"❌ Error fetching watchlist: {e}")
+            return []
+
+    def add_to_watchlist(self, user_id: str, symbol: str, notes: str = None, target_price: float = None):
+        """Add a stock to user's watchlist."""
+        if not self.client:
+            return None
+        try:
+            data = {"userId": user_id, "symbol": symbol}
+            if notes:
+                data["notes"] = notes
+            if target_price:
+                data["targetPrice"] = target_price
+            return self.client.mutation("watchlist:add", data)
+        except Exception as e:
+            print(f"❌ Error adding to watchlist: {e}")
+            return None
+
+    def remove_from_watchlist(self, item_id: str):
+        """Remove a stock from watchlist."""
+        if not self.client:
+            return False
+        try:
+            self.client.mutation("watchlist:remove", {"id": item_id})
+            return True
+        except Exception as e:
+            print(f"❌ Error removing from watchlist: {e}")
+            return False
+
 # If run directly, test the connection
 if __name__ == "__main__":
     service = ConvexService()

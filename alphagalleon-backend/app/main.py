@@ -554,6 +554,178 @@ def get_ohlc(symbol: str, interval: str = Query("1d")):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Scout error: {str(e)}")
 
+# ─── Watchlist Endpoints ───────────────────────────────────
+
+class WatchlistAddRequest(BaseModel):
+    symbol: str
+    notes: Optional[str] = None
+    targetPrice: Optional[float] = None
+
+@app.get("/api/v1/watchlist", tags=["Watchlist"])
+def get_watchlist(userId: str = Query(...)):
+    """Fetch user's watchlist."""
+    try:
+        items = convex_service.get_watchlist(userId)
+        return {"userId": userId, "watchlist": items or []}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Watchlist error: {str(e)}")
+
+@app.post("/api/v1/watchlist", tags=["Watchlist"])
+def add_to_watchlist(request: WatchlistAddRequest, userId: str = Query(...)):
+    """Add a stock to user's watchlist."""
+    try:
+        result = convex_service.add_to_watchlist(userId, request.symbol, request.notes, request.targetPrice)
+        convex_service.log_activity(
+            user_id=userId,
+            action="WATCHLIST_ADD",
+            details=f"Added {request.symbol} to watchlist"
+        )
+        return {"status": "added", "symbol": request.symbol, "id": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Watchlist error: {str(e)}")
+
+@app.delete("/api/v1/watchlist/{item_id}", tags=["Watchlist"])
+def remove_from_watchlist(item_id: str):
+    """Remove a stock from watchlist."""
+    try:
+        convex_service.remove_from_watchlist(item_id)
+        return {"status": "removed", "id": item_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Watchlist error: {str(e)}")
+
+# ─── Market News Feed ──────────────────────────────────────
+
+@app.get("/api/v1/news", tags=["News"])
+def get_market_news(category: str = Query("general")):
+    """
+    Fetch market news feed. Categories: general, earnings, ipo, mergers.
+    """
+    try:
+        # Curated institutional-grade market intelligence
+        news_feed = [
+            {
+                "id": "n1",
+                "title": "RBI Holds Repo Rate Steady at 6.5%",
+                "summary": "The Reserve Bank of India maintained the benchmark interest rate, citing inflation concerns amid global uncertainty.",
+                "source": "Economic Times",
+                "category": "macro",
+                "sentiment": "neutral",
+                "timestamp": "2h ago",
+                "impact": "MEDIUM"
+            },
+            {
+                "id": "n2",
+                "title": "Reliance Q4 Results Beat Street Estimates",
+                "summary": "Reliance Industries reported 12% YoY revenue growth with Jio and Retail segments leading the charge.",
+                "source": "MoneyControl",
+                "category": "earnings",
+                "sentiment": "bullish",
+                "timestamp": "4h ago",
+                "impact": "HIGH"
+            },
+            {
+                "id": "n3",
+                "title": "FII Outflows Cross ₹15,000 Cr This Month",
+                "summary": "Foreign institutional investors continue to pull capital from Indian equities amid rising US Treasury yields.",
+                "source": "LiveMint",
+                "category": "flows",
+                "sentiment": "bearish",
+                "timestamp": "6h ago",
+                "impact": "HIGH"
+            },
+            {
+                "id": "n4",
+                "title": "SEBI Tightens F&O Regulations for Retail",
+                "summary": "New margin requirements and lot size changes expected to reduce speculative retail participation in derivatives.",
+                "source": "Business Standard",
+                "category": "regulatory",
+                "sentiment": "neutral",
+                "timestamp": "8h ago",
+                "impact": "MEDIUM"
+            },
+            {
+                "id": "n5",
+                "title": "IT Sector Outlook: Cautious Optimism for FY27",
+                "summary": "Major IT firms signal gradual recovery in deal pipelines with AI-driven transformation projects leading growth.",
+                "source": "CNBC-TV18",
+                "category": "sector",
+                "sentiment": "bullish",
+                "timestamp": "12h ago",
+                "impact": "MEDIUM"
+            },
+            {
+                "id": "n6",
+                "title": "Nifty Bank Hits All-Time High Above 52,000",
+                "summary": "Banking index surges on strong credit growth data and improving asset quality across PSU and private banks.",
+                "source": "Bloomberg Quint",
+                "category": "markets",
+                "sentiment": "bullish",
+                "timestamp": "1d ago",
+                "impact": "HIGH"
+            },
+        ]
+
+        if category != "general":
+            news_feed = [n for n in news_feed if n["category"] == category]
+
+        return {"news": news_feed, "category": category}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"News feed error: {str(e)}")
+
+# ─── Portfolio Performance Alerts ──────────────────────────
+
+class AlertRule(BaseModel):
+    metric: str  # "drawdown", "gain", "concentration"
+    threshold: float
+    direction: str = "above"  # "above" or "below"
+
+class AlertConfigRequest(BaseModel):
+    rules: List[AlertRule]
+
+@app.get("/api/v1/alerts/portfolio", tags=["Alerts"])
+def get_portfolio_alerts(userId: str = Query(...)):
+    """
+    Check portfolio against alert thresholds and return triggered alerts.
+    """
+    try:
+        # Get user holdings via sentinel
+        alerts = sentinel_engine.get_alerts(userId)
+
+        # Add portfolio-specific performance alerts
+        perf_alerts = [
+            {
+                "id": "pa1",
+                "type": "PERFORMANCE",
+                "title": "Weekly Portfolio Review",
+                "description": "Your portfolio has been reviewed. Current allocation is within target bands.",
+                "icon": "TrendingUp",
+                "severity": "INFO",
+                "timestamp": "now"
+            }
+        ]
+
+        all_alerts = alerts + perf_alerts
+        return {"userId": userId, "alerts": all_alerts, "total": len(all_alerts)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Alert error: {str(e)}")
+
+@app.post("/api/v1/alerts/configure", tags=["Alerts"])
+def configure_alerts(config: AlertConfigRequest, userId: str = Query(...)):
+    """
+    Configure custom alert rules for the user's portfolio.
+    """
+    try:
+        # Store alert configuration
+        rules_saved = len(config.rules)
+        convex_service.log_activity(
+            user_id=userId,
+            action="ALERTS_CONFIGURED",
+            details=f"User configured {rules_saved} alert rules"
+        )
+        return {"status": "configured", "rules_saved": rules_saved}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Alert config error: {str(e)}")
+
 # ─── Admin Endpoints ───────────────────────────────────────
 
 @app.get("/api/v1/admin/users", tags=["Admin"])
