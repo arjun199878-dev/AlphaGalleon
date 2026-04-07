@@ -62,5 +62,5 @@ networks:
   default:
     name: alphagalleon-network
 
-volumes:
-  # postgres_data:
+# volumes:
+#   postgres_data:
