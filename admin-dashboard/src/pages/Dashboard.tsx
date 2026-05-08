@@ -79,11 +79,25 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 gap-4">
             <button className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all group">
               <FileText className="text-slate-400 group-hover:text-indigo-600 mb-2" size={32} />
-              <span className="text-sm font-semibold text-slate-600 group-hover:text-indigo-700">Audit Memos</span>
+              <span className="text-sm font-semibold text-slate-600 group-hover:text-indigo-700">Audit AI Memos</span>
+              <span className="text-xs text-slate-400 mt-1">{stats.totalMemos} generated</span>
             </button>
-            <button className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all group">
-              <Briefcase className="text-slate-400 group-hover:text-indigo-600 mb-2" size={32} />
-              <span className="text-sm font-semibold text-slate-600 group-hover:text-indigo-700">Check Portfolios</span>
+            <button 
+              onClick={async () => {
+                 try {
+                     const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+                     const res = await fetch(`${API}/api/v1/sentinel/global-scan`, { method: 'POST' });
+                     if (res.ok) alert("Global Push Notifications Sent!");
+                     else alert("Scan completed but no critical alerts triggered.");
+                 } catch (e) {
+                     alert("Error triggering backend scan.");
+                 }
+              }}
+              className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-red-200 hover:border-red-400 hover:bg-red-50 transition-all group"
+            >
+              <Briefcase className="text-red-400 group-hover:text-red-600 mb-2" size={32} />
+              <span className="text-sm font-semibold text-slate-600 group-hover:text-red-700">Trigger Global Sentinel Scan</span>
+              <span className="text-xs text-slate-400 mt-1">Force Push Notifications</span>
             </button>
           </div>
         </div>

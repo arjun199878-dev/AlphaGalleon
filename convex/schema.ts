@@ -15,7 +15,8 @@ export default defineSchema({
     })),
     createdAt: v.number(),
     lastActiveAt: v.optional(v.number()),
-    upstox_access_token: v.optional(v.string())
+    upstox_access_token: v.optional(v.string()),
+    expoPushToken: v.optional(v.string())
   }).index("by_email", ["email"]),
 
   // ─── Portfolios ──────────────────────────────────────

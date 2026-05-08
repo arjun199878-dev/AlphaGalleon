@@ -8,8 +8,8 @@ from app.auth import decode_token
 router = APIRouter()
 convex_service = ConvexService()
 
-@router.get("/holdings")
-async def get_upstox_holdings(authorization: Optional[str] = Header(None)):
+@router.post("/holdings/sync")
+async def sync_upstox_holdings(authorization: Optional[str] = Header(None)):
     """
     Fetch the user's live long term holdings from Upstox.
     Requires AlphaGalleon Bearer auth to identify the user.
@@ -53,9 +53,10 @@ async def get_upstox_holdings(authorization: Optional[str] = Header(None)):
                 raise HTTPException(status_code=400, detail=f"Failed to fetch holdings: {response.text}")
                 
             holdings_data = response.json()
+            raw_holdings = holdings_data.get("data", [])
             
-            # Here we could also automatically write these to the Convex 'holdings' table 
-            # if we have a default portfolio for the user. For now, we return them to the UI.
+            # Sync to Convex immediately
+            convex_service.sync_upstox_portfolio(user_id, raw_holdings)
             
             # Log Activity
             convex_service.log_activity(

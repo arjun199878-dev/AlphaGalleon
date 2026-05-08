@@ -17,6 +17,7 @@ class BasketItem(BaseModel):
 
 class ExecuteBasketRequest(BaseModel):
     basket: List[BasketItem]
+    sandbox: bool = False
 
 @router.post("/execute-basket")
 async def execute_basket(request: ExecuteBasketRequest, authorization: Optional[str] = Header(None)):
@@ -57,6 +58,27 @@ async def execute_basket(request: ExecuteBasketRequest, authorization: Optional[
         results = []
         has_errors = False
         
+        if request.sandbox:
+            import uuid
+            for item in request.basket:
+                results.append({
+                    "symbol": item.symbol,
+                    "status": "success",
+                    "order_id": f"PAPER-{str(uuid.uuid4())[:8].upper()}",
+                    "message": "Paper trade executed successfully"
+                })
+            
+            convex_service.log_activity(
+                action="PAPER_TRADE_EXECUTION",
+                details=f"Paper traded basket with {len(request.basket)} simulated limit orders.",
+                user_id=user_id
+            )
+            return {
+                "execution_status": "success",
+                "details": results,
+                "sandbox_mode": True
+            }
+
         async with httpx.AsyncClient() as client:
             for item in request.basket:
                 # Upstox Order Payload

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 import uvicorn
 import os
+import httpx
 from dotenv import load_dotenv
 
 # Import our internal modules
@@ -56,9 +57,9 @@ brain_engine = Brain()
 doctor_engine = Doctor()
 architect_engine = Architect()
 scout_engine = Scout()
-sentinel_engine = Sentinel(scout_engine)
-backtest_engine = Backtester(scout_engine)
 convex_service = ConvexService()
+sentinel_engine = Sentinel(scout_engine, convex_service)
+backtest_engine = Backtester(scout_engine)
 
 # ─── Request/Response Models ──────────────────────────────
 
@@ -79,6 +80,7 @@ class UserResponse(BaseModel):
     name: str
     email: str
     riskProfile: Optional[str] = None
+    upstoxLinked: bool = False
 
 class AuthResponse(BaseModel):
     token: str
@@ -169,7 +171,8 @@ def login(request: LoginRequest):
                 _id=str(user.get("_id", "")),
                 name=user.get("name", ""),
                 email=user.get("email", ""),
-                riskProfile=user.get("riskProfile")
+                riskProfile=user.get("riskProfile"),
+                upstoxLinked=bool(user.get("upstox_access_token"))
             ),
             expiresIn=get_token_expiry_seconds()
         )
@@ -182,6 +185,7 @@ def login(request: LoginRequest):
 def signup(request: SignupRequest):
     """
     User signup endpoint. Creates a new user account and returns JWT token.
+    Backend-only signup: all auth validation happens here, never on mobile.
     """
     try:
         # Check if user already exists
@@ -192,7 +196,7 @@ def signup(request: SignupRequest):
         # Hash password
         password_hash = hash_password(request.password)
         
-        # Create user in database
+        # Create user in database (now returns full user document)
         user = convex_service.create_user(
             name=request.name,
             email=request.email,
@@ -200,12 +204,16 @@ def signup(request: SignupRequest):
             riskProfile=request.riskProfile
         )
         
+        # Verify user was created successfully
+        if not user or not user.get("_id"):
+            raise HTTPException(status_code=500, detail="Failed to create user in database")
+        
         # Create access token
-        token = create_access_token({"sub": request.email, "user_id": str(user.get("_id", ""))})
+        token = create_access_token({"sub": request.email, "user_id": str(user.get("_id"))})
         
         # Log activity
         convex_service.log_activity(
-            user_id=str(user.get("_id", "")),
+            user_id=str(user.get("_id")),
             action="USER_SIGNUP",
             details=f"New user {request.email} signed up"
         )
@@ -213,10 +221,11 @@ def signup(request: SignupRequest):
         return AuthResponse(
             token=token,
             user=UserResponse(
-                _id=str(user.get("_id", "")),
-                name=user.get("name", ""),
+                _id=str(user.get("_id")),
+                name=user.get("name", "Unknown"),
                 email=user.get("email", ""),
-                riskProfile=user.get("riskProfile")
+                riskProfile=user.get("riskProfile"),
+                upstoxLinked=bool(user.get("upstox_access_token"))
             ),
             expiresIn=get_token_expiry_seconds()
         )
@@ -225,10 +234,10 @@ def signup(request: SignupRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Signup error: {str(e)}")
 
-@app.get("/api/v1/auth/verify", tags=["Auth"])
+@app.get("/api/v1/auth/verify", response_model=UserResponse, tags=["Auth"])
 def verify_token(authorization: Optional[str] = Header(None)):
     """
-    Verify JWT token validity.
+    Verify JWT token validity and return current user state.
     """
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing authorization header")
@@ -237,10 +246,20 @@ def verify_token(authorization: Optional[str] = Header(None)):
         token = authorization.replace("Bearer ", "")
         token_data = decode_token(token)
         
-        if not token_data:
+        if not token_data or not token_data.user_id:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
+            
+        user = convex_service.get_user_by_id(token_data.user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
         
-        return {"valid": True, "email": token_data.sub, "user_id": token_data.user_id}
+        return UserResponse(
+            _id=str(user.get("_id", "")),
+            name=user.get("name", ""),
+            email=user.get("email", ""),
+            riskProfile=user.get("riskProfile"),
+            upstoxLinked=bool(user.get("upstox_access_token"))
+        )
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Token verification failed: {str(e)}")
 
@@ -517,6 +536,52 @@ def get_sentinel_alerts(userId: str = Query(...)):
         return {"userId": userId, "alerts": alerts}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Sentinel error: {str(e)}")
+
+@app.post("/api/v1/sentinel/global-scan", tags=["Sentinel"])
+async def run_global_sentinel_scan():
+    """
+    Triggered by Convex CRON. Iterates over users with push tokens,
+    runs Sentinel diagnostics, and sends urgent push notifications.
+    """
+    try:
+        users = convex_service.list_users()
+        alerts_sent = 0
+        
+        for user in users:
+            uid = user.get("_id")
+            push_token = user.get("expoPushToken")
+            
+            if not uid or not push_token:
+                continue
+                
+            alerts = sentinel_engine.get_alerts(uid)
+            critical_alerts = [a for a in alerts if a.get("severity") in ["HIGH", "CRITICAL"]]
+            
+            if critical_alerts:
+                message = f"🚨 Galleon Alert: {critical_alerts[0].get('title', 'Portfolio Risk Detected')}"
+                
+                payload = {
+                    "to": push_token,
+                    "title": "AlphaGalleon Sentinel",
+                    "body": message,
+                    "badge": 1,
+                    "sound": "default",
+                    "data": {"screen": "Sentinel"}
+                }
+                
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post("https://exp.host/--/api/v2/push/send", json=payload)
+                    if resp.status_code == 200:
+                        alerts_sent += 1
+                        convex_service.log_activity(
+                            user_id=uid,
+                            action="SENTINEL_PUSH_ALERT",
+                            details=f"Sent push notification regarding {len(critical_alerts)} critical alerts."
+                        )
+                        
+        return {"status": "success", "users_scanned": len(users), "alerts_sent": alerts_sent}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Global Scan error: {str(e)}")
 
 @app.post("/api/v1/backtest", tags=["TimeTravel"])
 def run_backtest(request: dict):

@@ -87,3 +87,15 @@ export const updateUpstoxToken = mutation({
     await ctx.db.patch(id, { upstox_access_token, lastActiveAt: Date.now() });
   }
 });
+
+// ─── Save Expo Push Token ─────────────────────────────
+export const savePushToken = mutation({
+  args: {
+    id: v.id("users"),
+    pushToken: v.string()
+  },
+  handler: async (ctx, args) => {
+    const { id, pushToken } = args;
+    await ctx.db.patch(id, { expoPushToken: pushToken, lastActiveAt: Date.now() });
+  }
+});

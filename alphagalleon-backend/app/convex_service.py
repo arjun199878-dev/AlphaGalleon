@@ -24,14 +24,14 @@ class ConvexService:
     def store_memo(self, memo_data):
         """
         Stores an investment memo in Convex.
-        memo_data is a dict matching the 'memos:store' mutation args.
+        memo_data is a dict matching the 'memos:create' mutation args.
         """
         if not self.client:
             print("❌ Convex client not available. Memo not stored.")
             return None
             
         try:
-            memo_id = self.client.mutation("memos:store", memo_data)
+            memo_id = self.client.mutation("memos:create", memo_data)
             print(f"✅ Memo stored in Convex: {memo_id}")
             return memo_id
         except Exception as e:
@@ -63,7 +63,7 @@ class ConvexService:
             return []
             
         try:
-            return self.client.query("memos:listRecent", {"limit": limit})
+            return self.client.query("memos:list", {"limit": limit})
         except Exception as e:
             print(f"❌ Error listing memos: {e}")
             return []
@@ -76,7 +76,7 @@ class ConvexService:
             return []
             
         try:
-            return self.client.query("memos:listBySymbol", {"symbol": symbol})
+            return self.client.query("memos:getBySymbol", {"symbol": symbol})
         except Exception as e:
             print(f"❌ Error fetching memo for {symbol}: {e}")
             return []
@@ -123,6 +123,7 @@ class ConvexService:
     def create_user(self, name, email, password_hash=None, riskProfile=None):
         """
         Create a new user with optional password hashing for auth.
+        Returns the full user document (not just ID).
         """
         if not self.client:
             return None
@@ -136,9 +137,14 @@ class ConvexService:
             if password_hash:
                 user_data["password_hash"] = password_hash
             
-            user_result = self.client.mutation("users:create", user_data)
-            print(f"✅ User created: {user_result}")
-            return user_result
+            # Create user (returns ID)
+            user_id = self.client.mutation("users:create", user_data)
+            print(f"✅ User created with ID: {user_id}")
+            
+            # Fetch and return full user document
+            user = self.client.query("users:getByEmail", {"email": email})
+            print(f"✅ User document retrieved: {user}")
+            return user
         except Exception as e:
             print(f"❌ Error creating user: {e}")
             return None
@@ -177,6 +183,42 @@ class ConvexService:
         except Exception as e:
             print(f"❌ Error updating Upstox token: {e}")
             return False
+
+    # ─── Portfolio / Holdings Operations ────────────────────────────
+
+    def sync_upstox_portfolio(self, user_id: str, holdings_data: list):
+        """Sync live Upstox holdings to a dedicated Convex portfolio."""
+        if not self.client:
+            return None
+        try:
+            formatted_holdings = []
+            for h in holdings_data:
+                # Upstox V2 returns 'trading_symbol', 'quantity', 'average_price'
+                formatted_holdings.append({
+                    "symbol": h.get("trading_symbol", "UNKNOWN"),
+                    "quantity": int(h.get("quantity", 0)),
+                    "avgBuyPrice": float(h.get("average_price", 0.0))
+                })
+            
+            portfolio_id = self.client.mutation("portfolios:syncUpstox", {
+                "userId": user_id,
+                "holdings": formatted_holdings
+            })
+            print(f"✅ Upstox portfolio synced for user {user_id}")
+            return portfolio_id
+        except Exception as e:
+            print(f"❌ Error syncing Upstox portfolio: {e}")
+            return None
+
+    def get_holdings(self, user_id: str):
+        """Get user's portfolio holdings."""
+        if not self.client:
+            return []
+        try:
+            return self.client.query("holdings:listByUser", {"userId": user_id})
+        except Exception as e:
+            print(f"❌ Error fetching holdings: {e}")
+            return []
 
     # ─── Watchlist Operations ──────────────────────────────
 

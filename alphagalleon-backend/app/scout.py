@@ -1,6 +1,8 @@
 import os
 import httpx
 import logging
+import json
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -22,6 +24,12 @@ class Scout:
         # Check if we have the required credentials
         self.has_credentials = bool(self.access_token)
         
+        if "GOOGLE_API_KEY" in os.environ:
+             genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+             self.model = genai.GenerativeModel('gemini-2.5-flash')
+        else:
+             self.model = None
+             
         if self.has_credentials:
             logger.info("✓ Scout: Upstox credentials loaded successfully")
             logger.info(f"  API Key: {self.api_key[:20]}..." if self.api_key else "  API Key: Not provided")
@@ -289,7 +297,50 @@ class Scout:
         
         results = []
         
-        # Heuristic Matching Logic
+        if self.model:
+            prompt = f"""
+            You are AlphaGalleon's 'Scout' - an expert equity researcher.
+            The user is looking for an investment theme or screen: "{query}"
+            
+            Find 3-5 high-quality NSE/BSE Indian stocks that perfectly match this theme.
+            Return strictly JSON format:
+            [
+              {{
+                "symbol": "RELIANCE",
+                "name": "Reliance Industries",
+                "rationale": "One sentence explaining why it fits"
+              }}
+            ]
+            """
+            try:
+                response = self.model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+                results = json.loads(response.text)
+                
+                final_opportunities = []
+                for r in results:
+                    ltp = self.get_ltp(r["symbol"]) if self.has_credentials else None
+                    if not ltp and not self.has_credentials:
+                        # Fallback for UI visualization without keys
+                        # Based on hash to avoid flat 2500 identicals
+                        hash_val = sum(ord(c) for c in r.get("symbol", ""))
+                        ltp = 1000 + (hash_val * 7)
+
+                    price_str = f"₹{ltp:,.2f}" if ltp else "N/A"
+                    
+                    final_opportunities.append({
+                        "id": r["symbol"],
+                        "symbol": r["symbol"],
+                        "name": r["name"],
+                        "price": price_str,
+                        "change": "+2.4%", # Static trend for demo purposes
+                        "trend": "up",
+                        "rationale": r["rationale"]
+                    })
+                return final_opportunities
+            except Exception as e:
+                logger.error(f"Error in LLM screening, falling back to heuristics: {e}")
+                
+        # Heuristic Matching Logic (Fallback)
         if "debt" in q or "cash" in q or "clean" in q:
             results = [s for s in universe if s["debt"] in ["Zero", "Low"]]
         elif "tech" in q or "it" in q or "software" in q:
@@ -305,12 +356,14 @@ class Scout:
         # Map to final output format
         final_opportunities = []
         for r in results:
+            ltp = self.get_ltp(r["symbol"]) if self.has_credentials else float(r["price"].replace("₹", "").replace(",", "")) if "price" in r else 2500.0
+            price_str = f"₹{ltp:,.2f}" if ltp else "N/A"
             final_opportunities.append({
                 "id": r["symbol"],
                 "symbol": r["symbol"],
                 "name": r["name"],
-                "price": r["price"],
-                "change": "+2.4%", # Mocked trend for UI
+                "price": price_str,
+                "change": "+2.4%",
                 "trend": "up",
                 "rationale": r["rationale"]
             })

@@ -6,8 +6,9 @@ logger = logging.getLogger(__name__)
 class Sentinel:
     """Sentinel Risk Engine - Monitors market for drawdowns and portfolio risks"""
     
-    def __init__(self, scout_engine: Scout):
+    def __init__(self, scout_engine: Scout, convex_service=None):
         self.scout = scout_engine
+        self.convex_service = convex_service
 
     def get_alerts(self, user_id: str):
         """
@@ -33,15 +34,31 @@ class Sentinel:
                         "icon": "ShieldAlert"
                     })
             
-            # 2. Portfolio Concentration Alert (Simulated logic)
-            # This would normally query Convex for the user's portfolio
-            alerts.append({
-                "id": "concentration_risk",
-                "type": "WARNING",
-                "title": "Sector Concentration",
-                "description": "Your portfolio is >60% weighted in Tech. Diversification suggested.",
-                "icon": "PieChart"
-            })
+            # 2. Portfolio Concentration Alert
+            if self.convex_service:
+                holdings = self.convex_service.get_holdings(user_id)
+                if holdings:
+                    # simplistic check for high concentration in single stock
+                    total_value = sum((h.get('quantity', 0) * h.get('avgBuyPrice', 0)) for h in holdings)
+                    if total_value > 0:
+                        for h in holdings:
+                            val = h.get('quantity', 0) * h.get('avgBuyPrice', 0)
+                            if (val / total_value) > 0.4:
+                                alerts.append({
+                                    "id": f"concentration_{h.get('symbol')}",
+                                    "type": "WARNING",
+                                    "title": "Concentration Risk",
+                                    "description": f"Your portfolio is heavily weighted (>40%) in {h.get('symbol')}. Diversification suggested.",
+                                    "icon": "PieChart"
+                                })
+            else:
+                alerts.append({
+                    "id": "concentration_risk",
+                    "type": "WARNING",
+                    "title": "Portfolio Concentration",
+                    "description": "Ensure your portfolio is well diversified. Connect Convex to analyze.",
+                    "icon": "PieChart"
+                })
             
             # 3. Sentinel Proactive Insight
             alerts.append({

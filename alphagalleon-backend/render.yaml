@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: alphagalleon-backend
+    env: docker
+    region: ohio # Adjust as necessary
+    plan: free # Note: Upgrade to starter for heavy Upstox ticks/Cron uptime
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: CONVEX_URL
+        sync: false
+      - key: UPSTOX_API_KEY
+        sync: false
+      - key: UPSTOX_API_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: EXPO_PUSH_SERVER_URL
+        value: "https://exp.host/--/api/v2/push/send"
+      - key: CRON_SECRET
+        generateValue: true
+      - key: UPSTOX_REDIRECT_URI
+        value: "alphagalleon://callback" # Mobile deep link
