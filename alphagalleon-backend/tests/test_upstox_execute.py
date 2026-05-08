@@ -16,7 +16,7 @@ def test_missing_auth_header():
     
     response = client.post("/api/v1/upstox/execute-basket", json=payload)
     assert response.status_code == 401
-    assert "Missing authorization header" in response.json()["detail"]
+    assert "Missing authorization header" in response.json().get("detail", response.json().get("error", ""))
 
 
 @patch("app.upstox_execute.decode_token")
@@ -44,7 +44,7 @@ def test_user_not_linked_to_broker(mock_convex, mock_decode):
     )
     
     assert response.status_code == 403
-    assert "Upstox account not linked" in response.json()["detail"]
+    assert "Upstox account not linked" in response.json().get("detail", response.json().get("error", ""))
 
 
 @patch("app.upstox_execute.decode_token")

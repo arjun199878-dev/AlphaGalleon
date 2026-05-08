@@ -1,5 +1,6 @@
 import os
-from fastapi import APIRouter, HTTPException, Request, RedirectResponse
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 import httpx
 import urllib.parse

@@ -811,19 +811,21 @@ def get_activity_log(limit: int = Query(100, ge=1, le=1000)):
 
 # ─── Error Handlers ────────────────────────────────────────
 
+from fastapi.responses import JSONResponse
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
-    return {
-        "error": exc.detail,
-        "status_code": exc.status_code
-    }
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": exc.detail}
+    )
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
-    return {
-        "error": str(exc),
-        "status_code": 500
-    }
+    return JSONResponse(
+        status_code=500,
+        content={"error": str(exc)}
+    )
 
 # ─── Main ──────────────────────────────────────────────────
 
