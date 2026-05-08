@@ -1,4 +1,5 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Change this to your computer's local IP address when running on a physical device,
 // or use http://10.0.2.2:8000 for Android emulator and http://localhost:8000 for iOS simulator/web.
@@ -10,6 +11,20 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Add a request interceptor to attach the JWT token
+apiClient.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem('userToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export const getSystemHealth = async () => {
   try {
