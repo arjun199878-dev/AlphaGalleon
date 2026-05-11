@@ -4,8 +4,8 @@ services:
   # AlphaGalleon Backend API
   backend:
     build:
-      context: .
-      dockerfile: alphagalleon-backend/Dockerfile
+      context: alphagalleon-backend
+      dockerfile: Dockerfile
     container_name: alphagalleon-backend
     ports:
       - "8000:8000"
