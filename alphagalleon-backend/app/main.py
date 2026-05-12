@@ -19,8 +19,7 @@ from app.sentinel import Sentinel
 from app.backtester import Backtester
 from app.convex_service import ConvexService
 from app.upstox_auth import router as upstox_auth_router
-from app.upstox_holdings import router as upstox_holdings_router
-from app.upstox_execute import router as upstox_execute_router
+from app.broker_router import router as broker_router
 from app.auth import (
     hash_password,
     verify_password,
@@ -49,8 +48,8 @@ app.add_middleware(
 
 # ─── Main Routers ──────────────────────────────
 app.include_router(upstox_auth_router, prefix="/api/v1/upstox", tags=["Upstox Auth"])
-app.include_router(upstox_holdings_router, prefix="/api/v1/upstox", tags=["Upstox Sync"])
-app.include_router(upstox_execute_router, prefix="/api/v1/upstox", tags=["Upstox Execute"])
+# Disabled: using generic broker sync
+app.include_router(broker_router, prefix="/api/v1/broker", tags=["Broker"])
 
 # ─── Initialize Engines ───────────────────────────────────
 brain_engine = Brain()

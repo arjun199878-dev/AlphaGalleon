@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { getSystemHealth } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 
 const Home = () => {
   const [health, setHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { logout, userInfo } = useContext(AuthContext);
+  const { userInfo } = useContext(AuthContext);
 
   useEffect(() => {
     fetchHealth();
@@ -22,9 +22,6 @@ const Home = () => {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>AlphaGalleon HQ</Text>
-        <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
       </View>
 
       {userInfo && (
@@ -64,17 +61,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#64748b',
     marginBottom: 20,
-  },
-  logoutButton: {
-    backgroundColor: '#ef4444',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  logoutText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 12,
   },
   card: {
     backgroundColor: '#fff',

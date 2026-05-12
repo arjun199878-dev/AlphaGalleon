@@ -9,6 +9,7 @@ export const create = mutation({
     password_hash: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
     riskProfile: v.optional(v.union(v.literal("conservative"), v.literal("moderate"), v.literal("aggressive"))),
+    preferred_broker: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -20,6 +21,7 @@ export const create = mutation({
     return await ctx.db.insert("users", {
       ...args,
       preferences: { theme: "dark", focus: "balanced" },
+      preferred_broker: args.preferred_broker || "upstox",
       createdAt: Date.now(),
       lastActiveAt: Date.now(),
     });
@@ -97,5 +99,36 @@ export const savePushToken = mutation({
   handler: async (ctx, args) => {
     const { id, pushToken } = args;
     await ctx.db.patch(id, { expoPushToken: pushToken, lastActiveAt: Date.now() });
+  }
+});
+
+// ─── Update Broker Token Generic ──────────────────────────
+export const updateBrokerToken = mutation({
+  args: {
+    id: v.id("users"),
+    broker_id: v.string(),
+    access_token: v.optional(v.string())
+  },
+  handler: async (ctx, args) => {
+    const { id, broker_id, access_token } = args;
+    const updatePayload: any = { lastActiveAt: Date.now() };
+
+    // dynamically construct the key based on the broker
+    const tokenKey = `${broker_id}_access_token`;
+    updatePayload[tokenKey] = access_token;
+
+    await ctx.db.patch(id, updatePayload);
+  }
+});
+
+// ─── Update Preferred Broker ────────────────────────────
+export const updatePreferredBroker = mutation({
+  args: {
+    id: v.id("users"),
+    broker_id: v.string()
+  },
+  handler: async (ctx, args) => {
+    const { id, broker_id } = args;
+    await ctx.db.patch(id, { preferred_broker: broker_id, lastActiveAt: Date.now() });
   }
 });

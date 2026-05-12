@@ -14,13 +14,13 @@ def test_missing_auth_header():
         "sandbox": True
     }
     
-    response = client.post("/api/v1/upstox/execute-basket", json=payload)
+    response = client.post("/api/v1/broker/execute-basket", json=payload)
     assert response.status_code == 401
     assert "Missing authorization header" in response.json().get("detail", response.json().get("error", ""))
 
 
-@patch("app.upstox_execute.decode_token")
-@patch("app.upstox_execute.convex_service")
+@patch("app.broker_router.decode_token")
+@patch("app.broker_router.convex_service")
 def test_user_not_linked_to_broker(mock_convex, mock_decode):
     """Verify that a valid user without an Upstox access token gets a 403 Forbidden."""
     
@@ -38,7 +38,7 @@ def test_user_not_linked_to_broker(mock_convex, mock_decode):
     }
     
     response = client.post(
-        "/api/v1/upstox/execute-basket", 
+        "/api/v1/broker/execute-basket",
         json=payload, 
         headers={"Authorization": "Bearer VALID_MOCK_TOKEN"}
     )
@@ -47,8 +47,8 @@ def test_user_not_linked_to_broker(mock_convex, mock_decode):
     assert "Upstox account not linked" in response.json().get("detail", response.json().get("error", ""))
 
 
-@patch("app.upstox_execute.decode_token")
-@patch("app.upstox_execute.convex_service")
+@patch("app.broker_router.decode_token")
+@patch("app.broker_router.convex_service")
 def test_sandbox_execution(mock_convex, mock_decode):
     """Verify that a valid user with a linked broker receives PAPER-UUIDs completely bypassing httpx."""
     
@@ -70,7 +70,7 @@ def test_sandbox_execution(mock_convex, mock_decode):
     }
     
     response = client.post(
-        "/api/v1/upstox/execute-basket", 
+        "/api/v1/broker/execute-basket",
         json=payload, 
         headers={"Authorization": "Bearer VALID_MOCK_TOKEN"}
     )

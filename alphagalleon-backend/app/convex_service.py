@@ -166,27 +166,28 @@ class ConvexService:
             print(f"❌ Error fetching activity: {e}")
             return []
 
-    def update_upstox_token(self, user_id: str, token: str):
+    def update_broker_token(self, user_id: str, broker_id: str, token: str):
         """
-        Update Upstox access token for a user.
+        Update a generic broker access token for a user.
         """
         if not self.client:
             return False
             
         try:
-            self.client.mutation("users:updateUpstoxToken", {
+            self.client.mutation("users:updateBrokerToken", {
                 "id": user_id,
-                "upstox_access_token": token
+                "broker_id": broker_id,
+                "access_token": token
             })
-            print(f"✅ Upstox token updated for user: {user_id}")
+            print(f"✅ {broker_id.capitalize()} token updated for user: {user_id}")
             return True
         except Exception as e:
-            print(f"❌ Error updating Upstox token: {e}")
+            print(f"❌ Error updating {broker_id.capitalize()} token: {e}")
             return False
 
     # ─── Portfolio / Holdings Operations ────────────────────────────
 
-    def sync_upstox_portfolio(self, user_id: str, holdings_data: list):
+    def sync_portfolio(self, user_id: str, holdings_data: list):
         """Sync live Upstox holdings to a dedicated Convex portfolio."""
         if not self.client:
             return None
@@ -277,3 +278,21 @@ if __name__ == "__main__":
     # Test creating a user
     user_id = service.create_user("Test User", "test@example.com", "moderate")
     print(f"Created user: {user_id}")
+
+    def update_preferred_broker(self, user_id: str, broker_id: str):
+        """
+        Update a user's preferred broker.
+        """
+        if not self.client:
+            return False
+
+        try:
+            self.client.mutation("users:updatePreferredBroker", {
+                "id": user_id,
+                "broker_id": broker_id
+            })
+            print(f"✅ Preferred broker updated to {broker_id} for user: {user_id}")
+            return True
+        except Exception as e:
+            print(f"❌ Error updating preferred broker: {e}")
+            return False

@@ -1,11 +1,12 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home as HomeIcon, FileText, Briefcase, TrendingUp } from 'lucide-react-native';
+import { Home as HomeIcon, FileText, Briefcase, TrendingUp, Settings as SettingsIcon } from 'lucide-react-native';
 
 import Home from '../screens/Home';
 import Memos from '../screens/Memos';
 import Portfolio from '../screens/Portfolio';
 import Market from '../screens/Market';
+import Settings from '../screens/Settings';
 
 const Tab = createBottomTabNavigator();
 
@@ -47,6 +48,14 @@ const AppNavigator = () => {
         component={Market}
         options={{
           tabBarIcon: ({ color, size }) => <TrendingUp color={color} size={size} />
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={Settings}
+        options={{
+          tabBarIcon: ({ color, size }) => <SettingsIcon color={color} size={size} />,
+          headerShown: false // Settings screen has its own custom header
         }}
       />
     </Tab.Navigator>
