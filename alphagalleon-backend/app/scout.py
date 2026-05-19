@@ -1,6 +1,7 @@
 import os
 import httpx
 import logging
+from app.cache import cache_result
 import json
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -183,6 +184,7 @@ class Scout:
                             
         return result
 
+    @cache_result(ttl=300, key_prefix="ohlc")
     def get_ohlc(self, symbol: str, interval: str = "1d"):
         """
         Fetch OHLC (Open, High, Low, Close) data for a symbol.
@@ -210,6 +212,7 @@ class Scout:
                 return data["data"][key].get("ohlc")
         return None
 
+    @cache_result(ttl=5, key_prefix="quote")
     def get_quote(self, symbol: str):
         """
         Fetch complete quote for a symbol (LTP, OHLC, volume, depth).

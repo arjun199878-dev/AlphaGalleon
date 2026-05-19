@@ -2,6 +2,7 @@ import os
 import google.generativeai as genai
 from app.schemas import FundamentalData, InvestmentMemo, Recommendation
 import json
+from app.cache import cache_result
 from datetime import datetime
 
 # Initialize Gemini (using API key from environment for now)
@@ -20,6 +21,7 @@ class Brain:
              print("Warning: GOOGLE_API_KEY not found. Brain will run in mock mode if needed.")
              self.model = None
 
+    @cache_result(ttl=3600, key_prefix="memo")
     def generate_memo(self, data: FundamentalData) -> InvestmentMemo:
         # If model is not configured (no API key), return a lightweight mock memo
         if not self.model:

@@ -52,8 +52,8 @@ jobs:
     - name: Build Docker Image
       uses: docker/build-push-action@v4
       with:
-        context: .
-        file: ./alphagalleon-backend/Dockerfile
+        context: alphagalleon-backend
+        file: ./Dockerfile
         push: false
         tags: alphagalleon/backend:latest
         

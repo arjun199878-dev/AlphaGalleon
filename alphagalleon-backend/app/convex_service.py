@@ -185,6 +185,25 @@ class ConvexService:
             print(f"❌ Error updating {broker_id.capitalize()} token: {e}")
             return False
 
+
+    def update_preferred_broker(self, user_id: str, broker_id: str):
+        """
+        Update a user's preferred broker.
+        """
+        if not self.client:
+            return False
+
+        try:
+            self.client.mutation("users:updatePreferredBroker", {
+                "id": user_id,
+                "broker_id": broker_id
+            })
+            print(f"✅ Preferred broker updated to {broker_id} for user: {user_id}")
+            return True
+        except Exception as e:
+            print(f"❌ Error updating preferred broker: {e}")
+            return False
+
     # ─── Portfolio / Holdings Operations ────────────────────────────
 
     def sync_portfolio(self, user_id: str, holdings_data: list):
@@ -201,7 +220,7 @@ class ConvexService:
                     "avgBuyPrice": float(h.get("average_price", 0.0))
                 })
             
-            portfolio_id = self.client.mutation("portfolios:syncUpstox", {
+            portfolio_id = self.client.mutation("holdings:sync", {
                 "userId": user_id,
                 "holdings": formatted_holdings
             })
@@ -278,21 +297,3 @@ if __name__ == "__main__":
     # Test creating a user
     user_id = service.create_user("Test User", "test@example.com", "moderate")
     print(f"Created user: {user_id}")
-
-    def update_preferred_broker(self, user_id: str, broker_id: str):
-        """
-        Update a user's preferred broker.
-        """
-        if not self.client:
-            return False
-
-        try:
-            self.client.mutation("users:updatePreferredBroker", {
-                "id": user_id,
-                "broker_id": broker_id
-            })
-            print(f"✅ Preferred broker updated to {broker_id} for user: {user_id}")
-            return True
-        except Exception as e:
-            print(f"❌ Error updating preferred broker: {e}")
-            return False
