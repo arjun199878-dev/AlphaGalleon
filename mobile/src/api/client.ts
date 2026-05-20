@@ -77,3 +77,13 @@ export const getMarketQuote = async (symbol: string) => {
 };
 
 export default apiClient;
+
+export const getTaskStatus = async (taskId: string) => {
+  try {
+    const response = await apiClient.get(`/api/v1/tasks/${taskId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching task status:', error);
+    return null;
+  }
+};

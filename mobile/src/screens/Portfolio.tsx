@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
-import { constructPortfolio } from '../api/client';
+import { constructPortfolio, getTaskStatus } from '../api/client';
 
 const Portfolio = () => {
   const [capital, setCapital] = useState('100000');
@@ -10,15 +10,41 @@ const Portfolio = () => {
 
   const handleConstruct = async () => {
     setLoading(true);
-    const data = await constructPortfolio({
+    setResult(null);
+    const response = await constructPortfolio({
       age: 30,
       risk_appetite: riskProfile,
       capital_amount: parseFloat(capital),
       investment_horizon: '5 years',
       goals: 'Wealth Building',
     });
-    setResult(data);
-    setLoading(false);
+
+    if (response && response.task_id) {
+        pollTaskStatus(response.task_id);
+    } else {
+        setLoading(false);
+    }
+  };
+
+  const pollTaskStatus = async (taskId: string) => {
+    const checkStatus = async () => {
+        const taskData = await getTaskStatus(taskId);
+        if (taskData) {
+            if (taskData.status === "SUCCESS") {
+                setResult(taskData.result);
+                setLoading(false);
+            } else if (taskData.status === "FAILURE") {
+                console.error("Task failed:", taskData.error);
+                setLoading(false);
+            } else {
+                // Pending/Processing, keep polling
+                setTimeout(checkStatus, 2000);
+            }
+        } else {
+            setLoading(false);
+        }
+    };
+    checkStatus();
   };
 
   return (
