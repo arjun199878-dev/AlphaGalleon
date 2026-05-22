@@ -27,6 +27,32 @@ services:
       retries: 3
       start_period: 40s
 
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: alphagalleon-backend/Dockerfile
+    container_name: alphagalleon-worker
+    command: celery -A app.celery_app worker --loglevel=info
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - UPSTOX_ACCESS_TOKEN=${UPSTOX_ACCESS_TOKEN}
+      - CONVEX_URL=${CONVEX_URL}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - ENVIRONMENT=production
+    volumes:
+      - ./alphagalleon-backend:/app
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: alphagalleon-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
   # PostgreSQL Database (optional - for future use)
   # postgres:
   #   image: postgres:15-alpine

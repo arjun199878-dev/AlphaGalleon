@@ -6,6 +6,7 @@ import redis
 import json
 import functools
 import os
+import inspect
 from typing import Optional, Any, Callable
 import logging
 
@@ -118,32 +119,42 @@ def cache_result(ttl: int = 300, key_prefix: str = "cache"):
     Args:
         ttl: Time to live in seconds (default 300 = 5 minutes)
         key_prefix: Prefix for cache key (default "cache")
-    
-    Usage:
-        @cache_result(ttl=600)
-        def get_user_data(user_id: str):
-            return some_expensive_operation(user_id)
     """
     def decorator(func: Callable) -> Callable:
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            # Build cache key from function name and arguments
-            cache_key = f"{key_prefix}:{func.__name__}:{str(args)}:{str(kwargs)}"
-            
-            # Try to get from cache
-            cached = cache_manager.get(cache_key)
-            if cached is not None:
-                logger.debug(f"Cache HIT: {cache_key[:50]}...")
-                return cached
-            
-            # Call function and cache result
-            logger.debug(f"Cache MISS: {cache_key[:50]}...")
-            result = func(*args, **kwargs)
-            cache_manager.set(cache_key, result, ttl)
-            
-            return result
-        
-        return wrapper
+        if inspect.iscoroutinefunction(func):
+            @functools.wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                args_list = list(args)
+                if args_list and hasattr(args_list[0], "__class__") and args_list[0].__class__.__name__ in ["Brain", "Scout"]:
+                    args_list.pop(0)
+                cache_key = f"{key_prefix}:{func.__name__}:{str(args_list)}:{str(kwargs)}"
+                cached = cache_manager.get(cache_key)
+                if cached is not None:
+                    logger.debug(f"Cache HIT: {cache_key[:50]}...")
+                    return cached
+
+                logger.debug(f"Cache MISS: {cache_key[:50]}...")
+                result = await func(*args, **kwargs)
+                cache_manager.set(cache_key, result, ttl)
+                return result
+            return async_wrapper
+        else:
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                args_list = list(args)
+                if args_list and hasattr(args_list[0], "__class__") and args_list[0].__class__.__name__ in ["Brain", "Scout"]:
+                    args_list.pop(0)
+                cache_key = f"{key_prefix}:{func.__name__}:{str(args_list)}:{str(kwargs)}"
+                cached = cache_manager.get(cache_key)
+                if cached is not None:
+                    logger.debug(f"Cache HIT: {cache_key[:50]}...")
+                    return cached
+
+                logger.debug(f"Cache MISS: {cache_key[:50]}...")
+                result = func(*args, **kwargs)
+                cache_manager.set(cache_key, result, ttl)
+                return result
+            return wrapper
     return decorator
 
 def invalidate_cache(pattern: str = "*"):

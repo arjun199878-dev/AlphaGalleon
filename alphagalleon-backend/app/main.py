@@ -19,8 +19,7 @@ from app.sentinel import Sentinel
 from app.backtester import Backtester
 from app.convex_service import ConvexService
 from app.upstox_auth import router as upstox_auth_router
-from app.upstox_holdings import router as upstox_holdings_router
-from app.upstox_execute import router as upstox_execute_router
+from app.broker_router import router as broker_router
 from app.auth import (
     hash_password,
     verify_password,
@@ -49,8 +48,8 @@ app.add_middleware(
 
 # ─── Main Routers ──────────────────────────────
 app.include_router(upstox_auth_router, prefix="/api/v1/upstox", tags=["Upstox Auth"])
-app.include_router(upstox_holdings_router, prefix="/api/v1/upstox", tags=["Upstox Sync"])
-app.include_router(upstox_execute_router, prefix="/api/v1/upstox", tags=["Upstox Execute"])
+# Disabled: using generic broker sync
+app.include_router(broker_router, prefix="/api/v1/broker", tags=["Broker"])
 
 # ─── Initialize Engines ───────────────────────────────────
 brain_engine = Brain()
@@ -299,26 +298,21 @@ def create_memo(request: MemoRequest):
             recent_news_summary=request.news
         )
         
-        memo = brain_engine.generate_memo(fund_data)
-        
-        # Store in Convex
-        convex_service.store_memo({
-            "symbol": memo.ticker_symbol,
-            "verdict": memo.recommendation.upper(),
-            "confidence": memo.confidence_score,
-            "summary": memo.thesis_summary,
-            "reasoning": f"BULLS: {', '.join(memo.bull_case)}\nBEARS: {', '.join(memo.bear_case)}\nVALUATION: {memo.valuation_verdict}",
-            "priceAtGeneration": request.price
-        })
+        from app.tasks import generate_memo_task
+        from fastapi.responses import JSONResponse
+
+        # Dispatch async task instead of waiting
+        # dump the Pydantic model into a serializable dict
+        task = generate_memo_task.delay(fund_data.model_dump())
         
         convex_service.log_activity(
-            action="GENERATE_MEMO",
-            details=f"Generated memo for {memo.ticker_symbol} with {memo.recommendation.upper()} verdict."
+            action="DISPATCH_MEMO_TASK",
+            details=f"Dispatched background task to generate memo for {request.ticker}."
         )
 
-        return memo
+        return JSONResponse(status_code=202, content={"message": "Memo generation started", "task_id": task.id})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Brain error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Brain task dispatch error: {str(e)}")
 
 @app.get("/api/v1/brain/memos", tags=["Brain"])
 def list_memos(limit: int = Query(50, ge=1, le=500)):
@@ -335,6 +329,30 @@ def get_memo_by_symbol(symbol: str):
         return convex_service.get_memo_by_symbol(symbol)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching memo: {str(e)}")
+
+# ─── Task Status Endpoint ─────────────────────────────────
+
+@app.get("/api/v1/tasks/{task_id}", tags=["Tasks"])
+def get_task_status(task_id: str):
+    """
+    Check the status of an asynchronous background task (e.g. Brain memo generation).
+    """
+    from app.celery_app import celery_app
+    from celery.result import AsyncResult
+
+    task_result = AsyncResult(task_id, app=celery_app)
+
+    response = {
+        "task_id": task_id,
+        "status": task_result.status,
+    }
+
+    if task_result.status == "SUCCESS":
+        response["result"] = task_result.result
+    elif task_result.status == "FAILURE":
+        response["error"] = str(task_result.info)
+
+    return response
 
 # ─── Doctor Endpoints (Portfolio Diagnostics) ─────────────
 
@@ -394,16 +412,20 @@ def construct_portfolio(request: ArchitectRequest):
             goals=request.goals
         )
         
-        portfolio = architect_engine.construct_portfolio(user_dna)
+        from app.tasks import construct_portfolio_task
+        from fastapi.responses import JSONResponse
+
+        # Dispatch async task instead of waiting
+        task = construct_portfolio_task.delay(user_dna.model_dump())
         
         convex_service.log_activity(
-            action="CONSTRUCT_PORTFOLIO",
-            details=f"Constructed {portfolio.strategy_name} portfolio for {request.age}y {request.risk_appetite} investor."
+            action="DISPATCH_ARCHITECT_TASK",
+            details=f"Dispatched background task to construct portfolio for {request.risk_appetite} profile."
         )
         
-        return portfolio
+        return JSONResponse(status_code=202, content={"message": "Portfolio construction started", "task_id": task.id})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Architect error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Architect task dispatch error: {str(e)}")
 
 @app.get("/api/v1/architect/templates", tags=["Architect"])
 def get_portfolio_templates():
@@ -811,19 +833,21 @@ def get_activity_log(limit: int = Query(100, ge=1, le=1000)):
 
 # ─── Error Handlers ────────────────────────────────────────
 
+from fastapi.responses import JSONResponse
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
-    return {
-        "error": exc.detail,
-        "status_code": exc.status_code
-    }
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": exc.detail}
+    )
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
-    return {
-        "error": str(exc),
-        "status_code": 500
-    }
+    return JSONResponse(
+        status_code=500,
+        content={"error": str(exc)}
+    )
 
 # ─── Main ──────────────────────────────────────────────────
 

@@ -1,5 +1,6 @@
 import os
-from fastapi import APIRouter, HTTPException, Request, RedirectResponse
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 import httpx
 import urllib.parse
@@ -75,7 +76,7 @@ async def upstox_callback(code: str, state: str):
             raise HTTPException(status_code=400, detail="Access token missing in response")
             
         # Store in Convex
-        success = convex_service.update_upstox_token(user_id, access_token)
+        success = convex_service.update_broker_token(user_id, "upstox", access_token)
         if not success:
             raise HTTPException(status_code=500, detail="Failed to save token to DB")
             
