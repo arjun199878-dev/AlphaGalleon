@@ -30,7 +30,7 @@ def generate_memo_task(self, fundamental_data_dict: dict):
             "confidence": result.confidence_score,
             "summary": result.thesis_summary,
             "reasoning": f"BULLS: {', '.join(result.bull_case)}\nBEARS: {', '.join(result.bear_case)}\nVALUATION: {result.valuation_verdict}",
-            "priceAtGeneration": fundamental_data_dict.get("ticker", {}).get("current_price", 0.0)
+            "priceAtGeneration": data.ticker.current_price if getattr(data, "ticker", None) else 0.0
         })
 
         return result.dict()

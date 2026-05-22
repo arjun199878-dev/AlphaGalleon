@@ -110,8 +110,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: alphagalleon-backend
-          file: ./Dockerfile
+          context: .
+          file: ./alphagalleon-backend/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

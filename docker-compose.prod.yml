@@ -3,8 +3,8 @@ version: '3.8'
 services:
   backend:
     build:
-      context: alphagalleon-backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: alphagalleon-backend/Dockerfile
     ports:
       - "8000:8000"
     environment:
@@ -38,7 +38,7 @@ services:
       context: .
       dockerfile: alphagalleon-backend/Dockerfile
     container_name: alphagalleon-worker-prod
-    command: celery -A app.celery_app.celery_app worker --loglevel=info
+    command: celery -A app.celery_app worker --loglevel=info
     environment:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - UPSTOX_API_KEY=${UPSTOX_API_KEY}
